@@ -54,8 +54,12 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right CTA Button */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Right CTA Button & Live Badge */}
+          <div className="hidden md:flex items-center space-x-3">
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-subtle" />
+              <span>Model Online</span>
+            </div>
             <Link
               to="/assessment"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 active:scale-[0.98] transition-all duration-150"

@@ -1,15 +1,20 @@
 import React from 'react';
 import Card from './Card';
-import { User, Activity, Gauge, Flame, GlassWater, Dumbbell, Droplets, Heart } from 'lucide-react';
+import { User, Activity, Gauge, Flame, GlassWater, Dumbbell, Droplets, Scale } from 'lucide-react';
 
 export default function PatientSummary({ data }) {
   if (!data) return null;
+
+  const hM = data.height ? parseFloat(data.height) / 100 : 0;
+  const wKg = data.weight ? parseFloat(data.weight) : 0;
+  const bmiVal = hM > 0 ? (wKg / (hM * hM)).toFixed(1) : null;
 
   const items = [
     { label: 'Age', value: `${data.age} years`, icon: User },
     { label: 'Gender', value: data.gender, icon: User },
     { label: 'Height', value: `${data.height} cm`, icon: Activity },
     { label: 'Weight', value: `${data.weight} kg`, icon: Activity },
+    { label: 'Calculated BMI', value: bmiVal ? `${bmiVal} kg/m²` : 'N/A', icon: Scale },
     { label: 'Systolic BP', value: `${data.ap_hi} mmHg`, icon: Gauge },
     { label: 'Diastolic BP', value: `${data.ap_lo} mmHg`, icon: Gauge },
     { label: 'Cholesterol', value: data.cholesterol, icon: Droplets },
@@ -28,11 +33,11 @@ export default function PatientSummary({ data }) {
             Submitted Patient Profile
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Clinical metrics evaluated by the model
+            Clinical metrics & derived indicators evaluated by the model
           </p>
         </div>
         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-          11 Parameters
+          Verified Parameters
         </span>
       </div>
 
@@ -42,7 +47,7 @@ export default function PatientSummary({ data }) {
           return (
             <div
               key={idx}
-              className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex flex-col justify-between"
+              className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex flex-col justify-between hover:bg-slate-100/70 transition-colors"
             >
               <div className="flex items-center gap-1.5 text-slate-500 text-xs mb-1">
                 <IconComponent className="w-3.5 h-3.5 text-slate-400" />

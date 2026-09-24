@@ -16,6 +16,8 @@ import {
   RotateCcw,
   Sparkles,
   CheckCircle2,
+  Scale,
+  ShieldCheck,
 } from 'lucide-react';
 
 const INITIAL_FORM = {
@@ -38,6 +40,57 @@ export default function AssessmentPage() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+
+  // Count filled fields
+  const filledCount = Object.values(formData).filter((v) => v !== '').length;
+  const progressPercent = Math.round((filledCount / 11) * 100);
+
+  // Live BMI calculation
+  const heightNum = parseFloat(formData.height);
+  const weightNum = parseFloat(formData.weight);
+  let liveBmi = null;
+  if (heightNum >= 80 && heightNum <= 250 && weightNum >= 25 && weightNum <= 300) {
+    const bmiVal = (weightNum / ((heightNum / 100) ** 2)).toFixed(1);
+    const bmiF = parseFloat(bmiVal);
+    let category = 'Normal Weight';
+    let catColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+
+    if (bmiF < 18.5) {
+      category = 'Underweight';
+      catColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    } else if (bmiF < 25) {
+      category = 'Normal Weight';
+      catColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    } else if (bmiF < 30) {
+      category = 'Overweight';
+      catColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    } else {
+      category = 'Obese';
+      catColor = 'text-red-700 bg-red-50 border-red-200';
+    }
+    liveBmi = { val: bmiVal, category, catColor };
+  }
+
+  // Live Blood Pressure Classification
+  const sysNum = parseFloat(formData.ap_hi);
+  const diaNum = parseFloat(formData.ap_lo);
+  let liveBp = null;
+  if (sysNum >= 60 && diaNum >= 30 && sysNum <= 260 && diaNum <= 180 && diaNum <= sysNum) {
+    let stage = 'Normal BP';
+    let stageColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+
+    if (sysNum >= 140 || diaNum >= 90) {
+      stage = 'Stage 2 Hypertension';
+      stageColor = 'text-red-700 bg-red-50 border-red-200';
+    } else if ((sysNum >= 130 && sysNum <= 139) || (diaNum >= 80 && diaNum <= 89)) {
+      stage = 'Stage 1 Hypertension';
+      stageColor = 'text-orange-700 bg-orange-50 border-orange-200';
+    } else if (sysNum >= 120 && sysNum <= 129 && diaNum < 80) {
+      stage = 'Elevated BP';
+      stageColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    }
+    liveBp = { stage, stageColor };
+  }
 
   // Handle Input Changes
   const handleChange = (e) => {
@@ -156,7 +209,7 @@ export default function AssessmentPage() {
     setApiError('');
   };
 
-  // Populate Example Demo Case
+  // Populate Example Demo Cases
   const handleLoadDemo = (type) => {
     if (type === 'normal') {
       setFormData({
@@ -167,6 +220,20 @@ export default function AssessmentPage() {
         ap_hi: '120',
         ap_lo: '80',
         cholesterol: 'Normal',
+        gluc: 'Normal',
+        smoke: 'No',
+        alco: 'No',
+        active: 'Yes',
+      });
+    } else if (type === 'moderate') {
+      setFormData({
+        age: '57',
+        gender: 'Female',
+        height: '162',
+        weight: '76',
+        ap_hi: '136',
+        ap_lo: '86',
+        cholesterol: 'Above Normal',
         gluc: 'Normal',
         smoke: 'No',
         alco: 'No',
@@ -203,7 +270,6 @@ export default function AssessmentPage() {
     setIsLoading(true);
 
     try {
-      // Prepare payload with numerical types where required
       const payload = {
         age: parseFloat(formData.age),
         gender: formData.gender,
@@ -218,10 +284,9 @@ export default function AssessmentPage() {
         active: formData.active,
       };
 
-      // Call backend API
       const result = await predictCardioRisk(payload);
 
-      // Navigate to /result with state
+      // Navigate to /result with state (ScrollToTop component ensures top of page)
       navigate('/result', {
         state: {
           result,
@@ -229,55 +294,81 @@ export default function AssessmentPage() {
         },
       });
     } catch (err) {
-      setApiError(err.message || 'Unable to connect to the prediction service. Please make sure the backend server is running.');
+      setApiError(err.message || 'Unable to connect to the prediction service. Please ensure the backend server is reachable.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700 mb-3">
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700 mb-3 shadow-xs">
           <HeartPulse className="w-4 h-4 text-blue-600" />
-          Clinical Assessment Form
+          Interactive Clinical Assessment
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Cardiovascular Risk Assessment
+          Patient Risk Examination
         </h1>
         <p className="text-slate-600 text-sm sm:text-base mt-2">
-          Enter the patient's health information to generate an ML-based risk prediction.
+          Provide the 11 clinical features below to compute real-time cardiovascular risk probability.
         </p>
       </div>
 
-      {/* Quick Fill Helpers */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3.5 bg-white rounded-2xl border border-slate-200/90 text-xs text-slate-600">
+      {/* Quick Fill Helpers & Presets */}
+      <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span className="font-semibold text-slate-700">Quick Test Sample:</span>
+          <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+          <div>
+            <span className="font-semibold text-slate-900 text-xs sm:text-sm">Demo Patient Presets:</span>
+            <span className="text-slate-500 text-xs block sm:inline sm:ml-1">Auto-populate test cases for demonstration</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <button
             type="button"
             onClick={() => handleLoadDemo('normal')}
-            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200 transition-colors"
           >
-            Load Low Risk Sample
+            🟢 Low Risk Demo
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLoadDemo('moderate')}
+            className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold border border-amber-200 transition-colors"
+          >
+            🟡 Borderline Demo
           </button>
           <button
             type="button"
             onClick={() => handleLoadDemo('high')}
-            className="px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-medium transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-800 text-xs font-semibold border border-red-200 transition-colors"
           >
-            Load High Risk Sample
+            🔴 High Risk Demo
           </button>
+        </div>
+      </div>
+
+      {/* Form Completion Progress Bar */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex justify-between items-center text-xs mb-1.5">
+          <span className="font-semibold text-slate-700">
+            Form Progress: <span className="text-blue-600 font-bold">{filledCount} of 11</span> metrics entered
+          </span>
+          <span className="font-bold text-slate-500">{progressPercent}%</span>
+        </div>
+        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
       </div>
 
       {/* Backend API Error Banner */}
       {apiError && (
-        <div className="mb-6">
+        <div>
           <ErrorMessage
             title="Prediction Service Error"
             message={apiError}
@@ -295,7 +386,7 @@ export default function AssessmentPage() {
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
               <User className="w-5 h-5 text-blue-600" />
               <h2 className="text-base font-bold text-slate-900">
-                1. Basic Information
+                1. Patient Demographics
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -322,14 +413,21 @@ export default function AssessmentPage() {
           </div>
 
           {/* ============================================================ */}
-          {/* 2. BODY MEASUREMENTS */}
+          {/* 2. BODY MEASUREMENTS & LIVE BMI */}
           {/* ============================================================ */}
           <div>
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
-              <Activity className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                2. Body Measurements
-              </h2>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-blue-600" />
+                <h2 className="text-base font-bold text-slate-900">
+                  2. Anthropometric Measurements
+                </h2>
+              </div>
+              {liveBmi && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${liveBmi.catColor}`}>
+                  BMI: {liveBmi.val} kg/m² • {liveBmi.category}
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <InputField
@@ -356,14 +454,21 @@ export default function AssessmentPage() {
           </div>
 
           {/* ============================================================ */}
-          {/* 3. BLOOD PRESSURE */}
+          {/* 3. BLOOD PRESSURE & LIVE FEEDBACK */}
           {/* ============================================================ */}
           <div>
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
-              <Gauge className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                3. Blood Pressure
-              </h2>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
+              <div className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-blue-600" />
+                <h2 className="text-base font-bold text-slate-900">
+                  3. Arterial Blood Pressure
+                </h2>
+              </div>
+              {liveBp && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${liveBp.stageColor}`}>
+                  {liveBp.stage}
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <InputField
@@ -396,7 +501,7 @@ export default function AssessmentPage() {
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
               <Droplets className="w-5 h-5 text-blue-600" />
               <h2 className="text-base font-bold text-slate-900">
-                4. Health Indicators
+                4. Biochemical Laboratory Tests
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -422,18 +527,18 @@ export default function AssessmentPage() {
           </div>
 
           {/* ============================================================ */}
-          {/* 5. LIFESTYLE */}
+          {/* 5. LIFESTYLE FACTORS */}
           {/* ============================================================ */}
           <div>
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
               <Flame className="w-5 h-5 text-blue-600" />
               <h2 className="text-base font-bold text-slate-900">
-                5. Lifestyle Factors
+                5. Lifestyle & Behavioral Factors
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <SelectField
-                label="Smoking"
+                label="Smoking Status"
                 name="smoke"
                 value={formData.smoke}
                 onChange={handleChange}
@@ -465,27 +570,34 @@ export default function AssessmentPage() {
           {/* ============================================================ */}
           {/* ACTION BUTTONS */}
           {/* ============================================================ */}
-          <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleClear}
-              disabled={isLoading}
-              icon={RotateCcw}
-              className="w-full sm:w-auto"
-            >
-              Clear Form
-            </Button>
-            <Button
-              type="submit"
-              variant="orange"
-              size="lg"
-              loading={isLoading}
-              disabled={isLoading}
-              className="w-full sm:w-auto min-w-[200px]"
-            >
-              Predict Cardio Risk
-            </Button>
+          <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-slate-500 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Patient data is processed ephemerally and never stored.</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleClear}
+                disabled={isLoading}
+                icon={RotateCcw}
+                className="w-full sm:w-auto"
+              >
+                Clear Form
+              </Button>
+              <Button
+                type="submit"
+                variant="orange"
+                size="lg"
+                loading={isLoading}
+                disabled={isLoading}
+                className="w-full sm:w-auto min-w-[220px]"
+              >
+                Assess Cardiovascular Risk
+              </Button>
+            </div>
           </div>
         </form>
       </Card>

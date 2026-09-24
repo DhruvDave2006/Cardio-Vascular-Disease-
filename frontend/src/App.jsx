@@ -10,9 +10,12 @@ import InsightsPage from './pages/InsightsPage';
 import ModelInfoPage from './pages/ModelInfoPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 
+import ScrollToTop from './components/ScrollToTop';
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-blue-500 selection:text-white">
         <Navbar />
         <main className="flex-1">
