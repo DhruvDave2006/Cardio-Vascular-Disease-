@@ -88,9 +88,16 @@ class PredictResponse(BaseModel):
     message: str = Field(..., description="Advisory message")
 
 
-# ============================================================
-# API ROUTES
-# ============================================================
+@app.get("/")
+def root() -> Dict[str, Any]:
+    return {
+        "status": "online",
+        "service": "CardioML Prediction Service",
+        "documentation": "/docs",
+        "health_check": "/api/health",
+        "insights": "/api/insights"
+    }
+
 
 @app.get("/api/health")
 def health_check() -> Dict[str, Any]:
