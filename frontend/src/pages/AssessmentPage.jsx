@@ -359,34 +359,36 @@ export default function AssessmentPage() {
           <div className="flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-blue-600 shrink-0" />
             <div>
-              <h2 className="font-bold text-slate-900 text-sm sm:text-base">Machine Learning Classifier</h2>
-              <p className="text-slate-500 text-xs">Choose the predictive model algorithm or compare both</p>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base">Select Machine Learning Model</h2>
+              <p className="text-slate-500 text-xs">Choose the classifier algorithm to compute cardiovascular risk</p>
             </div>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 w-fit">
-            Dual Models Active
+          <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200 w-fit">
+            Selectable Model
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
           {/* Option 1: Random Forest */}
           <button
             type="button"
             onClick={() => setModelChoice('random_forest')}
-            className={`p-3.5 rounded-xl border text-left transition-all ${
+            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
               modelChoice === 'random_forest'
                 ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
                 : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-slate-900">Random Forest</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
-                73.96% Acc
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                🌲 Random Forest
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                Recommended • 73.6% Acc
               </span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Ensemble of 100 decision trees. Recommended for non-linear risk thresholds.
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Ensemble of 100 decision trees. Captures non-linear thresholds and correctly penalizes unhealthy lifestyle habits (smoking, alcohol, lack of activity).
             </p>
           </button>
 
@@ -394,45 +396,27 @@ export default function AssessmentPage() {
           <button
             type="button"
             onClick={() => setModelChoice('logistic_regression')}
-            className={`p-3.5 rounded-xl border text-left transition-all ${
+            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
               modelChoice === 'logistic_regression'
                 ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
                 : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-slate-900">Logistic Regression</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
-                72.33% Acc
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                📈 Logistic Regression
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                Baseline • 71.9% Acc
               </span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Original baseline linear classifier. Evaluates weighted sum of scaled inputs.
-            </p>
-          </button>
-
-          {/* Option 3: Dual Model Comparison */}
-          <button
-            type="button"
-            onClick={() => setModelChoice('both')}
-            className={`p-3.5 rounded-xl border text-left transition-all ${
-              modelChoice === 'both'
-                ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
-                : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-slate-900">Dual Model Comparison</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
-                Side-by-Side
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Runs both models simultaneously to compare linear vs. ensemble predictions.
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Standard linear classification model with sigmoid activation. Calibrated to guarantee that lifestyle risk factors (smoking, alcohol, inactivity) increase cardiovascular risk.
             </p>
           </button>
         </div>
       </div>
+
 
       {/* Form Completion Progress Bar */}
       <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">

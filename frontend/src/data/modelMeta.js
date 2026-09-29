@@ -136,33 +136,33 @@ export const PIPELINE_STEPS = [
 export const MODEL_METRICS_COMPARISON = [
   {
     metric: 'Test Accuracy',
-    randomForest: '73.96%',
-    logisticRegression: '72.33%',
-    difference: '+1.63% (RF Superior)',
+    randomForest: '73.61%',
+    logisticRegression: '71.91%',
+    difference: '+1.70% (RF Superior)',
   },
   {
     metric: 'Precision (High Risk)',
-    randomForest: '76.80%',
-    logisticRegression: '74.55%',
-    difference: '+2.25% (Fewer False Positives)',
+    randomForest: '76.35%',
+    logisticRegression: '74.12%',
+    difference: '+2.23% (Fewer False Positives)',
   },
   {
     metric: 'Recall / Sensitivity',
-    randomForest: '68.80%',
-    logisticRegression: '67.95%',
-    difference: '+0.85% (Detects More Positive Cases)',
+    randomForest: '68.42%',
+    logisticRegression: '67.20%',
+    difference: '+1.22% (Detects More Positive Cases)',
   },
   {
     metric: 'F1-Score',
-    randomForest: '0.7258',
-    logisticRegression: '0.7110',
-    difference: '+0.0148 (Better Balanced)',
+    randomForest: '0.7217',
+    logisticRegression: '0.7049',
+    difference: '+0.0168 (Better Balanced)',
   },
   {
     metric: 'ROC-AUC Score',
-    randomForest: '0.8029',
-    logisticRegression: '0.7859',
-    difference: '+0.0170 (Superior Discrimination)',
+    randomForest: '0.8002',
+    logisticRegression: '0.7823',
+    difference: '+0.0179 (Superior Discrimination)',
   },
   {
     metric: 'Decision Surface',
@@ -171,4 +171,5 @@ export const MODEL_METRICS_COMPARISON = [
     difference: 'RF captures multi-stage BP boundaries',
   },
 ];
+
 
