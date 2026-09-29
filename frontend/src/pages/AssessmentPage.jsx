@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Scale,
   ShieldCheck,
+  BrainCircuit,
 } from 'lucide-react';
 
 const INITIAL_FORM = {
@@ -37,6 +38,7 @@ const INITIAL_FORM = {
 export default function AssessmentPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [modelChoice, setModelChoice] = useState('random_forest');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -282,6 +284,7 @@ export default function AssessmentPage() {
         smoke: formData.smoke,
         alco: formData.alco,
         active: formData.active,
+        model_choice: modelChoice,
       };
 
       const result = await predictCardioRisk(payload);
@@ -346,6 +349,87 @@ export default function AssessmentPage() {
             className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-800 text-xs font-semibold border border-red-200 transition-colors"
           >
             🔴 High Risk Demo
+          </button>
+        </div>
+      </div>
+
+      {/* Model Selection Selector */}
+      <div className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <BrainCircuit className="w-5 h-5 text-blue-600 shrink-0" />
+            <div>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base">Machine Learning Classifier</h2>
+              <p className="text-slate-500 text-xs">Choose the predictive model algorithm or compare both</p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 w-fit">
+            Dual Models Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* Option 1: Random Forest */}
+          <button
+            type="button"
+            onClick={() => setModelChoice('random_forest')}
+            className={`p-3.5 rounded-xl border text-left transition-all ${
+              modelChoice === 'random_forest'
+                ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
+                : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-slate-900">Random Forest</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                73.96% Acc
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-snug">
+              Ensemble of 100 decision trees. Recommended for non-linear risk thresholds.
+            </p>
+          </button>
+
+          {/* Option 2: Logistic Regression */}
+          <button
+            type="button"
+            onClick={() => setModelChoice('logistic_regression')}
+            className={`p-3.5 rounded-xl border text-left transition-all ${
+              modelChoice === 'logistic_regression'
+                ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
+                : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-slate-900">Logistic Regression</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+                72.33% Acc
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-snug">
+              Original baseline linear classifier. Evaluates weighted sum of scaled inputs.
+            </p>
+          </button>
+
+          {/* Option 3: Dual Model Comparison */}
+          <button
+            type="button"
+            onClick={() => setModelChoice('both')}
+            className={`p-3.5 rounded-xl border text-left transition-all ${
+              modelChoice === 'both'
+                ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/20 shadow-xs'
+                : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-slate-900">Dual Model Comparison</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
+                Side-by-Side
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-snug">
+              Runs both models simultaneously to compare linear vs. ensemble predictions.
+            </p>
           </button>
         </div>
       </div>

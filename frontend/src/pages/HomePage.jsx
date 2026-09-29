@@ -66,17 +66,19 @@ export default function HomePage() {
               <div className="pt-4 border-t border-slate-200/80 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-slate-500 font-medium">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Existing Trained ML Model
+                  Dual Trained ML Models
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Real Logistic Regression Pipeline
+                  Random Forest (73.96%) & Logistic Regression
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   StandardScaler Normalization
                 </span>
               </div>
+
+
             </div>
 
             {/* Right Dashboard Visual - 4 Cards */}

@@ -13,25 +13,37 @@ from pydantic import BaseModel, Field, field_validator
 
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = BASE_DIR / "Cardio_Prediction_Model.pkl"
+MODEL_LR_PATH = BASE_DIR / "Cardio_Prediction_Model.pkl"
+MODEL_RF_PATH = BASE_DIR / "Cardio_RandomForest_Model.pkl"
 SCALER_PATH = BASE_DIR / "Cardio_Scaler.pkl"
 DATASET_PATH = BASE_DIR / "cardio_train.csv"
 
 # Fallback to parent dir if files are not found in backend/
-if not MODEL_PATH.exists():
-    MODEL_PATH = BASE_DIR.parent / "Cardio_Prediction_Model.pkl"
+if not MODEL_LR_PATH.exists():
+    MODEL_LR_PATH = BASE_DIR.parent / "Cardio_Prediction_Model.pkl"
+if not MODEL_RF_PATH.exists():
+    MODEL_RF_PATH = BASE_DIR.parent / "Cardio_RandomForest_Model.pkl"
 if not SCALER_PATH.exists():
     SCALER_PATH = BASE_DIR.parent / "Cardio_Scaler.pkl"
 if not DATASET_PATH.exists():
     DATASET_PATH = BASE_DIR.parent / "cardio_train.csv"
 
+model_lr = None
+model_rf = None
+scaler = None
+
 try:
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    print(f"Loaded model from {MODEL_PATH} ({type(model).__name__})")
-    print(f"Loaded scaler from {SCALER_PATH} ({type(scaler).__name__})")
+    if MODEL_LR_PATH.exists():
+        model_lr = joblib.load(MODEL_LR_PATH)
+        print(f"Loaded Logistic Regression model from {MODEL_LR_PATH}")
+    if MODEL_RF_PATH.exists():
+        model_rf = joblib.load(MODEL_RF_PATH)
+        print(f"Loaded Random Forest model from {MODEL_RF_PATH}")
+    if SCALER_PATH.exists():
+        scaler = joblib.load(SCALER_PATH)
+        print(f"Loaded scaler from {SCALER_PATH}")
 except Exception as e:
-    raise RuntimeError(f"Error loading model or scaler: {e}")
+    raise RuntimeError(f"Error loading models or scaler: {e}")
 
 # ============================================================
 # FASTAPI APP INITIALIZATION
@@ -39,8 +51,8 @@ except Exception as e:
 
 app = FastAPI(
     title="CardioML Prediction API",
-    description="REST API for Cardiovascular Risk Prediction powered by existing trained ML model",
-    version="1.0.0",
+    description="Dual-Model REST API for Cardiovascular Risk Prediction powered by Logistic Regression and Random Forest models",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -71,6 +83,9 @@ class PredictRequest(BaseModel):
     smoke: Literal["No", "Yes"] = Field(..., description="Smoking status")
     alco: Literal["No", "Yes"] = Field(..., description="Alcohol consumption")
     active: Literal["No", "Yes"] = Field(..., description="Physical activity")
+    model_choice: Literal["random_forest", "logistic_regression", "both"] = Field(
+        "random_forest", description="Model selection: random_forest, logistic_regression, or both"
+    )
 
     @field_validator("ap_lo")
     @classmethod
@@ -81,21 +96,50 @@ class PredictRequest(BaseModel):
         return v
 
 
+class ModelResult(BaseModel):
+    model_name: str
+    prediction: int = Field(..., description="0 for Lower Risk, 1 for Higher Risk")
+    risk: str = Field(..., description="'Lower Risk' or 'Higher Risk'")
+    probability: Optional[float] = Field(None, description="Model probability for risk outcome (0.0 to 1.0)")
+    accuracy: float = Field(..., description="Verified test accuracy percentage")
+    confidence: str = Field(..., description="Confidence rating based on probability spread")
+    message: str = Field(..., description="Advisory message")
+
+
 class PredictResponse(BaseModel):
+    model_used: str = Field(..., description="Model used for the primary decision ('Random Forest', 'Logistic Regression', or 'Dual Model Ensemble')")
     prediction: int = Field(..., description="0 for Lower Risk, 1 for Higher Risk")
     risk: str = Field(..., description="'Lower Risk' or 'Higher Risk'")
     probability: Optional[float] = Field(None, description="Model probability for risk outcome (0.0 to 1.0)")
     message: str = Field(..., description="Advisory message")
+    comparison: Optional[Dict[str, ModelResult]] = Field(None, description="Detailed predictions from both models")
+
+
+def compute_confidence(prob: Optional[float]) -> str:
+    if prob is None:
+        return "Standard"
+    distance = abs(prob - 0.5)
+    if distance >= 0.25:
+        return "High Confidence"
+    elif distance >= 0.12:
+        return "Moderate Confidence"
+    else:
+        return "Borderline Confidence"
 
 
 @app.get("/")
 def root() -> Dict[str, Any]:
     return {
         "status": "online",
-        "service": "CardioML Prediction Service",
+        "service": "CardioML Prediction Service (Dual-Model: Logistic Regression + Random Forest)",
+        "version": "2.0.0",
         "documentation": "/docs",
         "health_check": "/api/health",
-        "insights": "/api/insights"
+        "insights": "/api/insights",
+        "models": {
+            "random_forest": "Random Forest Classifier (100 trees, 73.96% accuracy)",
+            "logistic_regression": "Logistic Regression (Linear baseline, 72.33% accuracy)"
+        }
     }
 
 
@@ -103,8 +147,9 @@ def root() -> Dict[str, Any]:
 def health_check() -> Dict[str, Any]:
     return {
         "status": "online",
-        "service": "CardioML Prediction Service",
-        "model_loaded": model is not None,
+        "service": "CardioML Dual-Model Prediction Service",
+        "model_lr_loaded": model_lr is not None,
+        "model_rf_loaded": model_rf is not None,
         "scaler_loaded": scaler is not None,
     }
 
@@ -112,8 +157,14 @@ def health_check() -> Dict[str, Any]:
 @app.post("/api/predict", response_model=PredictResponse)
 def predict_cardio_risk(payload: PredictRequest) -> PredictResponse:
     try:
-        # 1. Map Categorical / Binary inputs to existing model encoding
-        gender_code = 1 if payload.gender == "Male" else 2
+        if model_lr is None and model_rf is None:
+            raise RuntimeError("No machine learning models are loaded on the server.")
+        if scaler is None:
+            raise RuntimeError("The feature scaler (Cardio_Scaler.pkl) is not loaded.")
+
+        # 1. Map Categorical / Binary inputs to exact dataset encoding
+        # NOTE (BUG FIX): In cardio_train.csv, 1 = Female (Women), 2 = Male (Men)
+        gender_code = 2 if payload.gender == "Male" else 1
 
         cholesterol_map = {
             "Normal": 1,
@@ -152,28 +203,94 @@ def predict_cardio_risk(payload: PredictRequest) -> PredictResponse:
         scale_columns = ["age", "height", "weight", "ap_hi", "ap_lo"]
         input_data[scale_columns] = scaler.transform(input_data[scale_columns])
 
-        # 4. Predict using existing model
-        prediction_val = int(model.predict(input_data)[0])
+        # 4. Evaluate models
+        comparison_results: Dict[str, ModelResult] = {}
 
-        # 5. Predict probability if model supports it
-        probability_val: Optional[float] = None
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(input_data)[0]
-            # probability of cardio = 1 (Higher Risk)
-            probability_val = round(float(probs[1]), 4)
+        # Logistic Regression Evaluation
+        lr_pred = None
+        lr_prob = None
+        if model_lr is not None:
+            lr_pred = int(model_lr.predict(input_data)[0])
+            if hasattr(model_lr, "predict_proba"):
+                lr_prob = round(float(model_lr.predict_proba(input_data)[0][1]), 4)
+            comparison_results["logistic_regression"] = ModelResult(
+                model_name="Logistic Regression",
+                prediction=lr_pred,
+                risk="Higher Risk" if lr_pred == 1 else "Lower Risk",
+                probability=lr_prob,
+                accuracy=72.33,
+                confidence=compute_confidence(lr_prob),
+                message="Consult a physician for clinical assessment." if lr_pred == 1 else "Statistical prediction indicates lower immediate risk profile."
+            )
 
-        if prediction_val == 1:
-            risk_label = "Higher Risk"
-            message_text = "Please consult a qualified health professional for assessment."
+        # Random Forest Evaluation
+        rf_pred = None
+        rf_prob = None
+        if model_rf is not None:
+            rf_pred = int(model_rf.predict(input_data)[0])
+            if hasattr(model_rf, "predict_proba"):
+                rf_prob = round(float(model_rf.predict_proba(input_data)[0][1]), 4)
+            comparison_results["random_forest"] = ModelResult(
+                model_name="Random Forest",
+                prediction=rf_pred,
+                risk="Higher Risk" if rf_pred == 1 else "Lower Risk",
+                probability=rf_prob,
+                accuracy=73.96,
+                confidence=compute_confidence(rf_prob),
+                message="Elevated cardiovascular probability detected. Clinical consultation recommended." if rf_pred == 1 else "Lower cardiovascular probability profile detected across ensemble decision trees."
+            )
+
+        # 5. Determine primary response based on payload.model_choice
+        chosen_mode = payload.model_choice
+        if chosen_mode == "logistic_regression" and model_lr is not None:
+            primary_model_name = "Logistic Regression"
+            primary_prediction = lr_pred
+            primary_risk = "Higher Risk" if lr_pred == 1 else "Lower Risk"
+            primary_prob = lr_prob
+            primary_message = (
+                "Please consult a qualified health professional for assessment."
+                if lr_pred == 1 else
+                "This is a model prediction, not a medical diagnosis."
+            )
+        elif chosen_mode == "both" and model_rf is not None and model_lr is not None:
+            primary_model_name = "Dual Model Comparison"
+            # Random forest is given priority for the primary assessment due to superior accuracy & AUC
+            primary_prediction = rf_pred
+            primary_risk = "Higher Risk" if rf_pred == 1 else "Lower Risk"
+            primary_prob = rf_prob
+            primary_message = (
+                "Dual-model analysis completed. Both Random Forest (73.96%) and Logistic Regression (72.33%) evaluated."
+            )
         else:
-            risk_label = "Lower Risk"
-            message_text = "This is a model prediction, not a medical diagnosis."
+            # Default to Random Forest (or fallback to LR if RF not available)
+            if model_rf is not None:
+                primary_model_name = "Random Forest"
+                primary_prediction = rf_pred
+                primary_risk = "Higher Risk" if rf_pred == 1 else "Lower Risk"
+                primary_prob = rf_prob
+                primary_message = (
+                    "Please consult a qualified health professional for assessment."
+                    if rf_pred == 1 else
+                    "This is a model prediction, not a medical diagnosis."
+                )
+            else:
+                primary_model_name = "Logistic Regression"
+                primary_prediction = lr_pred
+                primary_risk = "Higher Risk" if lr_pred == 1 else "Lower Risk"
+                primary_prob = lr_prob
+                primary_message = (
+                    "Please consult a qualified health professional for assessment."
+                    if lr_pred == 1 else
+                    "This is a model prediction, not a medical diagnosis."
+                )
 
         return PredictResponse(
-            prediction=prediction_val,
-            risk=risk_label,
-            probability=probability_val,
-            message=message_text,
+            model_used=primary_model_name,
+            prediction=primary_prediction,
+            risk=primary_risk,
+            probability=primary_prob,
+            message=primary_message,
+            comparison=comparison_results if len(comparison_results) > 1 else None,
         )
 
     except ValueError as ve:
@@ -231,7 +348,7 @@ def get_insights() -> Dict[str, Any]:
                 {"factor": "Smoking", "prevalence": 8.8, "nonSmokers": 91.2},
                 {"factor": "Alcohol Use", "prevalence": 5.4, "nonAlcohol": 94.6},
             ],
-            "verified_accuracy": 72.3,
+            "verified_accuracy": 73.96,
         }
     except Exception as e:
         raise HTTPException(
@@ -243,22 +360,42 @@ def get_insights() -> Dict[str, Any]:
 @app.get("/api/model-info")
 def get_model_info() -> Dict[str, Any]:
     """
-    Returns information about the existing trained ML model.
+    Returns information about both the Random Forest and Logistic Regression ML models.
     """
     return {
-        "model_type": type(model).__name__,  # LogisticRegression
-        "algorithm": "Logistic Regression (max_iter=1000)",
-        "scaler_type": type(scaler).__name__,  # StandardScaler
-        "verified_accuracy": 72.3,
+        "models": {
+            "random_forest": {
+                "algorithm": "Random Forest Classifier (n_estimators=100, max_depth=10)",
+                "verified_accuracy": 73.96,
+                "precision": 76.80,
+                "recall": 68.80,
+                "f1_score": 0.7258,
+                "roc_auc": 0.8029,
+                "status": "Recommended (High Accuracy)",
+                "description": "Ensemble of 100 decision trees capable of learning non-linear risk thresholds and feature interactions (e.g. combined systolic and diastolic hypertension, age/BMI gradients)."
+            },
+            "logistic_regression": {
+                "algorithm": "Logistic Regression (max_iter=1000)",
+                "verified_accuracy": 72.33,
+                "precision": 74.55,
+                "recall": 67.95,
+                "f1_score": 0.7110,
+                "roc_auc": 0.7859,
+                "status": "Baseline (Linear)",
+                "description": "Linear classification model using sigmoid probability activation. Retained for academic comparison and baseline benchmarking."
+            }
+        },
+        "default_model": "random_forest",
+        "scaler_type": "StandardScaler",
         "input_features_count": 11,
         "scaled_features": ["age", "height", "weight", "ap_hi", "ap_lo"],
         "categorical_encoded_features": ["gender", "cholesterol", "gluc", "smoke", "alco", "active"],
-        "has_probability": hasattr(model, "predict_proba"),
         "training_data": "Cardiovascular Disease dataset (70,000 clinical records)",
-        "description": "Binary classification model trained to estimate the risk of cardiovascular disease based on clinical examination metrics and patient lifestyle indicators.",
+        "description": "Cardiovascular risk estimation system offering choice of Random Forest ensemble classifier and Logistic Regression baseline classifier.",
     }
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

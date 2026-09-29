@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchModelInfo } from '../services/api';
-import { FEATURE_DEFINITIONS, PIPELINE_STEPS } from '../data/modelMeta';
+import { FEATURE_DEFINITIONS, PIPELINE_STEPS, MODEL_METRICS_COMPARISON } from '../data/modelMeta';
 import {
   BrainCircuit,
   Binary,
@@ -62,59 +62,145 @@ export default function ModelInfoPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* SECTION 1: ABOUT THE MODEL */}
+      {/* SECTION 1: ABOUT THE DUAL MODELS */}
       {/* ============================================================ */}
-      <Card className="border-slate-200 shadow-sm">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-6">
-          <BrainCircuit className="w-5 h-5 text-blue-600" />
-          <h2 className="text-lg font-bold text-slate-900">
-            About the Model
-          </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Model 1: Random Forest */}
+        <Card className="border-blue-200 bg-gradient-to-br from-white via-blue-50/20 to-white shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-blue-600" />
+              <h2 className="text-base font-bold text-slate-900">
+                Random Forest Classifier
+              </h2>
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+              Recommended (73.96% Acc)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Accuracy</span>
+              <span className="text-base font-extrabold text-emerald-600 mt-0.5 block">73.96%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Precision</span>
+              <span className="text-base font-extrabold text-slate-900 mt-0.5 block">76.80%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Recall</span>
+              <span className="text-base font-extrabold text-slate-900 mt-0.5 block">68.80%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">ROC-AUC</span>
+              <span className="text-base font-extrabold text-indigo-600 mt-0.5 block">0.8029</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Ensemble model consisting of 100 decision trees (max depth 10). It naturally models non-linear risk thresholds (such as multi-stage systolic/diastolic blood pressure) and resolves linear anomalies like the smoker paradox.
+          </p>
+
+          <div className="text-[11px] font-mono text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            Loaded from: <strong>Cardio_RandomForest_Model.pkl</strong>
+          </div>
+        </Card>
+
+        {/* Model 2: Logistic Regression */}
+        <Card className="border-slate-200 bg-white shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Binary className="w-5 h-5 text-slate-600" />
+              <h2 className="text-base font-bold text-slate-900">
+                Logistic Regression
+              </h2>
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+              Baseline (72.33% Acc)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Accuracy</span>
+              <span className="text-base font-extrabold text-slate-800 mt-0.5 block">72.33%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Precision</span>
+              <span className="text-base font-extrabold text-slate-900 mt-0.5 block">74.55%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">Recall</span>
+              <span className="text-base font-extrabold text-slate-900 mt-0.5 block">67.95%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block">ROC-AUC</span>
+              <span className="text-base font-extrabold text-slate-800 mt-0.5 block">0.7859</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Linear classifier calculating log-odds probability via sigmoid activation. Maintained for academic baseline comparison and evaluation against ensemble architectures.
+          </p>
+
+          <div className="text-[11px] font-mono text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            Loaded from: <strong>Cardio_Prediction_Model.pkl</strong>
+          </div>
+        </Card>
+      </div>
+
+      {/* ============================================================ */}
+      {/* BENCHMARK COMPARISON MATRIX */}
+      {/* ============================================================ */}
+      <Card className="border-slate-200 shadow-sm overflow-hidden" padding="p-0">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <TableIcon className="w-5 h-5 text-indigo-600" />
+              Model Performance Benchmark (70,000 Records)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Empirical evaluation on 20% holdout test dataset (14,000 patient records)
+            </p>
+          </div>
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 w-fit">
+            Random Forest Leads in All 5 Metrics
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-              Machine Learning Algorithm
-            </span>
-            <span className="text-base font-bold text-slate-900 mt-1 block">
-              {modelInfo?.algorithm || 'Logistic Regression (max_iter=1000)'}
-            </span>
-            <span className="text-xs text-slate-500 mt-0.5 block">
-              Loaded from Cardio_Prediction_Model.pkl
-            </span>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-              Feature Preprocessing Scaler
-            </span>
-            <span className="text-base font-bold text-slate-900 mt-1 block">
-              {modelInfo?.scaler_type || 'StandardScaler'}
-            </span>
-            <span className="text-xs text-slate-500 mt-0.5 block">
-              Loaded from Cardio_Scaler.pkl
-            </span>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-              Verified Test Accuracy
-            </span>
-            <span className="text-base font-bold text-emerald-600 mt-1 block">
-              {modelInfo?.verified_accuracy || 72.3}%
-            </span>
-            <span className="text-xs text-slate-500 mt-0.5 block">
-              Evaluated on 70,000 dataset records
-            </span>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[11px] font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-3.5">Metric</th>
+                <th className="px-6 py-3.5 text-blue-700">🌲 Random Forest (Ensemble)</th>
+                <th className="px-6 py-3.5 text-slate-700">📈 Logistic Regression (Baseline)</th>
+                <th className="px-6 py-3.5">Clinical / Statistical Advantage</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {MODEL_METRICS_COMPARISON.map((row, i) => (
+                <tr key={i} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-900">
+                    {row.metric}
+                  </td>
+                  <td className="px-6 py-4 font-extrabold text-blue-700 bg-blue-50/20">
+                    {row.randomForest}
+                  </td>
+                  <td className="px-6 py-4 font-medium text-slate-700">
+                    {row.logisticRegression}
+                  </td>
+                  <td className="px-6 py-4 text-xs font-semibold text-emerald-700">
+                    {row.difference}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        <p className="text-sm text-slate-600 leading-relaxed">
-          {modelInfo?.description ||
-            'Binary classification model trained to estimate the risk of cardiovascular disease based on clinical examination metrics and patient lifestyle indicators.'}
-        </p>
       </Card>
+
 
       {/* ============================================================ */}
       {/* SECTION 2: MODEL PIPELINE */}

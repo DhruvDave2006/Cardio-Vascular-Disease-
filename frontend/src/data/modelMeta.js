@@ -13,7 +13,7 @@ export const FEATURE_DEFINITIONS = [
     label: 'Gender',
     unit: 'Categorical',
     type: 'Binary Code',
-    scaling: 'Not scaled (Encoded: 1=Male, 2=Female)',
+    scaling: 'Not scaled (Dataset: 1=Female, 2=Male)',
     description: 'Patient biological sex.',
     normalRange: 'Male / Female',
   },
@@ -114,21 +114,61 @@ export const PIPELINE_STEPS = [
   {
     step: '03',
     title: 'Feature Encoding',
-    desc: 'Maps categorical strings to exact model integer codes.',
+    desc: 'Maps categorical strings to exact model integer codes (1=Female, 2=Male).',
   },
   {
     step: '04',
     title: 'Feature Scaling',
-    desc: 'Applies existing Cardio_Scaler.pkl (StandardScaler) to the 5 continuous variables.',
+    desc: 'Applies Cardio_Scaler.pkl (StandardScaler) to continuous variables.',
   },
   {
     step: '05',
-    title: 'Existing Trained ML Model',
-    desc: 'Evaluates normalized feature vector using trained LogisticRegression model.',
+    title: 'Dual Machine Learning Inference',
+    desc: 'Evaluates feature vector with Random Forest (73.96%) or Logistic Regression (72.33%).',
   },
   {
     step: '06',
     title: 'Risk & Probability Output',
-    desc: 'Returns classification (0=Lower Risk, 1=Higher Risk) & exact probability score.',
+    desc: 'Returns classification (0=Lower Risk, 1=Higher Risk), probability score & model comparison.',
   },
 ];
+
+export const MODEL_METRICS_COMPARISON = [
+  {
+    metric: 'Test Accuracy',
+    randomForest: '73.96%',
+    logisticRegression: '72.33%',
+    difference: '+1.63% (RF Superior)',
+  },
+  {
+    metric: 'Precision (High Risk)',
+    randomForest: '76.80%',
+    logisticRegression: '74.55%',
+    difference: '+2.25% (Fewer False Positives)',
+  },
+  {
+    metric: 'Recall / Sensitivity',
+    randomForest: '68.80%',
+    logisticRegression: '67.95%',
+    difference: '+0.85% (Detects More Positive Cases)',
+  },
+  {
+    metric: 'F1-Score',
+    randomForest: '0.7258',
+    logisticRegression: '0.7110',
+    difference: '+0.0148 (Better Balanced)',
+  },
+  {
+    metric: 'ROC-AUC Score',
+    randomForest: '0.8029',
+    logisticRegression: '0.7859',
+    difference: '+0.0170 (Superior Discrimination)',
+  },
+  {
+    metric: 'Decision Surface',
+    randomForest: 'Non-linear tree splits',
+    logisticRegression: 'Linear hyperplane',
+    difference: 'RF captures multi-stage BP boundaries',
+  },
+];
+

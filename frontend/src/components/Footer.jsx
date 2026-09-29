@@ -22,9 +22,10 @@ export default function Footer() {
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
               <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>Real Logistic Regression Pipeline • Trained on 70,000 Records</span>
+              <span>Random Forest (73.96%) & Logistic Regression • Trained on 70,000 Records</span>
             </div>
           </div>
+
 
           {/* Navigation Links */}
           <div>
